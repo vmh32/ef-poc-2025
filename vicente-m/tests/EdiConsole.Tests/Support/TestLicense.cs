@@ -12,7 +12,7 @@ namespace EdiConsole.Tests.Support;
 /// </summary>
 internal static class TestLicense
 {
-    private static readonly Lazy<bool> Applied = new(Apply);
+    private static readonly Lazy<bool> Applied = new(Apply); // Lazy ensures the license is applied only once per process.
 
     public static void EnsureSet() => _ = Applied.Value;
 
