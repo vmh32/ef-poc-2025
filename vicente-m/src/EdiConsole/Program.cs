@@ -1,21 +1,38 @@
 ﻿using EdiConsole.Configuration;
 using EdiConsole.Mapping;
+using EdiConsole.Parsing;
 using EdiConsole.Services;
+using EdiConsole.Sourcing;
 using EdiFabric;
-using EdiFabric.Core.Model.Edi.X12;
-using EdiFabric.Framework.Readers;
-using EdiFabric.Templates.Hipaa5010;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
-var builder = Host.CreateApplicationBuilder(args);
+// The content root is where appsettings*.json are read from. By default it's the current directory, so running
+// from another folder (e.g. vicente-m/) would silently skip them. The build copies them to the output folder,
+// so reading them from there works wherever the app is started.
+var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
+{
+    Args = args,
+    ContentRootPath = AppContext.BaseDirectory,
+});
 
 builder.Services.AddOptions<EdiFabricOptions>()
     .BindConfiguration(EdiFabricOptions.SectionName)
     .Validate(
         options => !string.IsNullOrWhiteSpace(options.SerialKey),
         "EdiFabric:SerialKey is missing. For local development run: dotnet user-secrets set \"EdiFabric:SerialKey\" \"<your key>\"");
+
+builder.Services.AddOptions<FileSourceOptions>()
+    .BindConfiguration(FileSourceOptions.SectionName)
+    .Validate(
+        options => !string.IsNullOrWhiteSpace(options.Folder),
+        "FileSource:Folder is missing. Set it in appsettings.<Environment>.json or with the FileSource__Folder environment variable.");
+
+// Stateless services: one instance for the whole run.
+builder.Services.AddSingleton<IEdiFileSource, LocalFolderFileSource>();
+builder.Services.AddSingleton<IEdiParser, EdiFabricParser>();
+builder.Services.AddSingleton<IClaimMapper, ClaimMapper>();
 
 builder.Services.AddSingleton<IGreeter, Greeter>();
 
@@ -25,43 +42,50 @@ using var host = builder.Build();
 var ediFabricOptions = host.Services.GetRequiredService<IOptions<EdiFabricOptions>>().Value;
 License.SetSerial(ediFabricOptions.SerialKey);
 
-// ── TEMPORARY PROBE: read one file, map its claims with ClaimMapper and print them.
-var samplePath = args.Length > 0
-    ? Path.GetFullPath(args[0])
-    : throw new ArgumentException("Usage: dotnet run -- <path to .edi file>");
-Console.WriteLine($"Reading {samplePath}");
+// ── TEMPORARY PROBE: list the folder, parse every file and map the clean 837Ps. Replaced by the facade later.
+var source = host.Services.GetRequiredService<IEdiFileSource>();
+var parser = host.Services.GetRequiredService<IEdiParser>();
+var mapper = host.Services.GetRequiredService<IClaimMapper>();
 
-var mapper = new ClaimMapper();
-await using var stream = File.OpenRead(samplePath);
-using var reader = new X12Reader(stream, "EdiFabric.Templates.Hipaa", new X12ReaderSettings());
-
-while (await reader.ReadAsync())
+await foreach (var file in source.ListAsync())
 {
-    switch (reader.Item)
+    Console.WriteLine(file.Name);
+    try
     {
-        case ISA isa:
-            Console.WriteLine($"ISA  interchange {isa.InterchangeControlNumber_13}, usage {isa.UsageIndicator_15}");
-            break;
-        case GS gs:
-            Console.WriteLine($"GS   group {gs.GroupControlNumber_6}, guide {gs.VersionAndRelease_8}");
-            break;
-        case TS837P ts:
-            Console.WriteLine($"ST   837P transaction {ts.ST.TransactionSetControlNumber_02}");
-            foreach (var claim in mapper.Map(ts))
+        await using var stream = await source.OpenReadAsync(file);
+        var transactions = 0;
+
+        await foreach (var parsed in parser.ParseAsync(stream))
+        {
+            transactions++;
+            var header = $"  ISA {parsed.InterchangeControlNumber} ({parsed.UsageIndicator}), ST {parsed.TransactionSetControlNumber}:";
+
+            if (parsed.Problem is { } problem)
             {
-                Console.WriteLine($"  Claim {claim.PatientControlNumber}: {claim.TotalCharge:0.00}, POS {claim.PlaceOfServiceCode}, frequency {claim.FrequencyCode}");
-                Console.WriteLine($"    Billing provider {claim.BillingProvider.Name.LastOrOrganizationName}, NPI {claim.BillingProvider.Npi}, ZIP {claim.BillingProvider.Address.PostalCode}");
-                Console.WriteLine($"    Subscriber       {claim.Subscriber.Name.FirstName} {claim.Subscriber.Name.LastOrOrganizationName}, member {claim.Subscriber.MemberId}, born {claim.Subscriber.DateOfBirth:yyyy-MM-dd}");
-                Console.WriteLine($"    Patient          {claim.Patient.Name.FirstName} {claim.Patient.Name.LastOrOrganizationName}, relationship {claim.Patient.RelationshipToSubscriber}, born {claim.Patient.DateOfBirth:yyyy-MM-dd}");
-                Console.WriteLine($"    Payer            {claim.Payer.Name} ({claim.Payer.PayerId})");
-                foreach (var diagnosis in claim.Diagnoses)
-                    Console.WriteLine($"    Diagnosis {diagnosis.Sequence}: {diagnosis.Qualifier} {diagnosis.Code}");
-                foreach (var line in claim.ServiceLines)
-                    Console.WriteLine($"    Line {line.LineNumber}: {line.ProcedureCode} {line.Charge:0.00} ({line.Units} {line.UnitBasis}), diagnosis {line.DiagnosisPointer1}, on {line.ServiceDateFrom:yyyy-MM-dd}");
+                Console.WriteLine($"{header} {problem.Code}: {problem.Message}");
             }
-            break;
-        default:
-            Console.WriteLine($"{reader.Item?.GetType().Name}");
-            break;
+            else if (parsed.Transaction!.HasErrors)
+            {
+                Console.WriteLine($"{header} 837P with parse errors, not mapped (the validator will report them)");
+            }
+            else
+            {
+                var claims = mapper.Map(parsed.Transaction);
+                Console.WriteLine($"{header} 837P, {claims.Count} claim(s)");
+                foreach (var claim in claims)
+                {
+                    Console.WriteLine(
+                        $"    {claim.PatientControlNumber}: {claim.TotalCharge:0.00}, patient {claim.Patient.Name.FirstName} {claim.Patient.Name.LastOrOrganizationName}, " +
+                        $"{claim.Diagnoses.Count} diagnosis(es), {claim.ServiceLines.Count} line(s)");
+                }
+            }
+        }
+
+        if (transactions == 0)
+            Console.WriteLine("  empty: no transactions");
+    }
+    catch (Exception ex)                                    // one bad file mustn't stop the others
+    {
+        Console.WriteLine($"  FAILED: {ex.GetType().Name}: {ex.Message}");
     }
 }
