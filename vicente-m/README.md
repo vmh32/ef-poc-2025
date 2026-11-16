@@ -53,4 +53,6 @@ If the folder doesn't exist, the app stops and prints the full path it tried.
 ### Other settings
 
 - `FileSource:SearchPattern` (default `*.edi`) selects which files are read. Subfolders are not searched.
+- `Ingestion:SnipLevel` (default `4`, in `appsettings.json`) is the SNIP level EdiFabric validates at, 1–4.
+  Only transactions with no issues are mapped. Example: `dotnet run --project src/EdiConsole -- --Ingestion:SnipLevel=1`.
 - Each run parses every file and spends EdiFabric operations (the community plan allows 250 a day).
