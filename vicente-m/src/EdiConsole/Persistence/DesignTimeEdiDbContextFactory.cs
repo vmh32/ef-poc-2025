@@ -6,7 +6,7 @@ namespace EdiConsole.Persistence;
 
 /// <summary>
 /// Creates the <see cref="EdiDbContext"/> for the <c>dotnet ef</c> tools (migrations, database update),
-/// so they don't have to run Program.cs. Reads the salme configuration as the app:
+/// so they don't have to run Program.cs. Reads the same configuration as the app:
 /// appsettings files, then environment variables (e.g. <c>ConnectionStrings__EdiDb</c>).
 /// </summary>
 internal sealed class DesignTimeEdiDbContextFactory : IDesignTimeDbContextFactory<EdiDbContext>
