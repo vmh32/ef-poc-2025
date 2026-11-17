@@ -5,7 +5,16 @@ and saves it with its claims (accepted) or with its validation issues (rejected)
 
 ## Before the first run
 
-### 1. EdiFabric serial key
+### 1. The .NET 10 SDK
+
+The app targets .NET 10 (`net10.0`). `global.json` asks for SDK 10.0.100 or any later 10.0.x, so you need a .NET 10 SDK
+installed. Check it from `vicente-m/`:
+
+```powershell
+dotnet --version   # must print 10.0.x; global.json picks it even if newer SDKs are installed
+```
+
+### 2. EdiFabric serial key
 
 It is never committed; store it in User Secrets once:
 
@@ -16,7 +25,7 @@ dotnet user-secrets set "EdiFabric:SerialKey" "<your key>"
 
 On a machine without User Secrets (e.g. CI), set the `EdiFabric__SerialKey` environment variable instead.
 
-### 2. The database
+### 3. The database
 
 You need SQL Server Express running locally as `.\SQLEXPRESS`, with Windows authentication. The connection string is
 `ConnectionStrings:EdiDb` in `appsettings.Development.json`; override it with the `ConnectionStrings__EdiDb`
@@ -25,7 +34,7 @@ environment variable for another server.
 Create the database (`EdiIngestion`) from the migrations, from `vicente-m/`:
 
 ```powershell
-dotnet tool restore                                         # installs dotnet-ef 8.0.33, pinned in .config/dotnet-tools.json
+dotnet tool restore                                         # installs dotnet-ef 10.0.15, pinned in .config/dotnet-tools.json
 dotnet dotnet-ef database update --project src/EdiConsole   # creates the database, or applies new migrations
 ```
 
