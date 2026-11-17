@@ -18,8 +18,13 @@ namespace EdiConsole.Parsing;
 /// structured issues (segment, position, code). Reducing them to a string here would lose that detail.
 /// </para>
 /// <para>
-/// Each transaction read spends EdiFabric operations, and the license must be set before the first read
-/// (Program.cs does it at startup).
+/// The license must be set before the first read (Program.cs does it at startup).
+/// </para>
+/// <para>
+/// Not done here, or anywhere yet: envelope validation (SNIP 1–2 for ISA, GS, GE, IEA).
+/// The ISA is only read for ISA13 and ISA15. Its fields, the GS fields (e.g. GS01 = HC, GS08 = 005010X222A1)
+/// and the trailers' control numbers and counts are never checked, and a missing IEA goes unnoticed.
+/// A file with a wrong envelope but a valid 837P is accepted (e.g. samples/837-sample-file-2.edi).
 /// </para>
 /// </remarks>
 public sealed class EdiFabricParser : IEdiParser
@@ -82,8 +87,9 @@ public sealed class EdiFabricParser : IEdiParser
                             $"{error.ReaderErrorCode}: {error.Message}"));     // EdiFabric's own code, e.g. InvalidSpecOrAssembly
                     break;
 
-                case GS or GE or IEA:                           // envelope parts nothing in our model uses
-                    break;
+                case GS or GE or IEA:                           // envelope parts nothing in our model uses. NOT VALIDATED by anyone:
+                    break;                                      // the reader doesn't compare GE/IEA with GS/ISA (control numbers,
+                                                                // counts), and their own fields aren't checked either (see remarks).
 
                 default:                                        // anything else: reject visibly, never ignore silently
                     yield return new ParsedTransaction(

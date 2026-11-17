@@ -22,7 +22,11 @@ namespace EdiConsole.Ingestion;
 /// </para>
 /// <para>
 /// A duplicate (same bytes as any file ingested before, accepted or rejected) is skipped before parsing: no row is
-/// written and no EdiFabric operation is spent.
+/// written.
+/// </para>
+/// <para>
+/// Not validated yet: the envelope (ISA/GS/GE/IEA, SNIP 1–2) and SNIP 5–7. Only each transaction (ST…SE) is
+/// validated, through EdiFabric at SNIP 1–4.
 /// </para>
 /// </remarks>
 public sealed class IngestionService(
@@ -53,7 +57,7 @@ public sealed class IngestionService(
         var content = await ReadAllAsync(file, cancellationToken);
         var sha256 = Convert.ToHexString(SHA256.HashData(content)).ToLowerInvariant();
 
-        // 3. Dedupe, before any EdiFabric operation is spent.
+        // 3. Dedupe, before EdiFabric is used.
         if (await store.IsAlreadyIngestedAsync(sha256, cancellationToken))
             return new IngestionResult(file.Name, IngestionOutcome.Duplicate, ClaimCount: 0, ErrorCount: 0);
 

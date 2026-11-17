@@ -60,7 +60,7 @@ Each file ends with one outcome:
 |---|---|---|
 | `Accepted` | every transaction in the file is a valid 837P | the file and its claims |
 | `Rejected` | anything is wrong: a validation error, another transaction type, unreadable or empty | the file and its issues, no claims |
-| `Duplicate` | the same bytes were ingested before (accepted or rejected) | nothing; no EdiFabric operation is spent |
+| `Duplicate` | the same bytes were ingested before (accepted or rejected) | nothing |
 
 All or nothing: one problem anywhere in a file rejects the whole file. A second run over the same folder reports every
 file as `Duplicate`.
@@ -95,7 +95,6 @@ If the folder doesn't exist, the app stops and prints the full path it tried.
 - `FileSource:SearchPattern` (default `*.edi`) selects which files are read. Subfolders are not searched.
 - `Ingestion:SnipLevel` (default `4`, in `appsettings.json`) is the SNIP level EdiFabric validates at, 1–4.
   Example: `dotnet run --project src/EdiConsole -- --Ingestion:SnipLevel=1`.
-- Each run spends EdiFabric operations for every new file it reads and validates (the community plan allows 250 a day).
 
 ## Looking at the results
 

@@ -18,7 +18,10 @@ namespace EdiConsole.Validation;
 /// </para>
 /// <para>
 /// Parse errors found while reading (an 837P with <c>HasErrors</c>) are reported here too: <c>IsValid</c> includes them.
-/// Each validation spends EdiFabric operations.
+/// </para>
+/// <para>
+/// Scope: one transaction, ST through SE (including SE01 and SE02 = ST02). It never sees the envelope around it
+/// (ISA, GS, GE, IEA), so envelope checks at any SNIP level are not done here, nor anywhere yet.
 /// </para>
 /// </remarks>
 public sealed class EdiFabricValidator : ITransactionValidator

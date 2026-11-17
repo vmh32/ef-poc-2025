@@ -12,6 +12,6 @@ public enum IngestionOutcome
     /// <summary>Stored, with its issues only.</summary>
     Rejected,
 
-    /// <summary>Skipped: the same content was ingested before. Nothing stored, no EdiFabric operation spent.</summary>
+    /// <summary>Skipped: the same content was ingested before. Nothing stored.</summary>
     Duplicate,
 }
