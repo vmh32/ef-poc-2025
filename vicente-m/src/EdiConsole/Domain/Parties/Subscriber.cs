@@ -5,7 +5,7 @@ namespace EdiConsole.Domain.Parties;
 /// </summary>
 public sealed record Subscriber
 {
-    public required string MemberId { get; init; }             // 2010BA NM109 (NM108 = MI)
+    public required string MemberId { get; init; }             // 2010BA NM109 (NM108 = MI) ## we are making it required as custom rule: should polish (make nullable + rule to require it when NM108 = MI)
     public required PartyName Name { get; init; }              // 2010BA NM103–NM105
     public DateOnly? DateOfBirth { get; init; }                // DMG02
     public string? Gender { get; init; }                       // DMG03: F, M, U

@@ -71,6 +71,11 @@ License.SetSerial(ediFabricOptions.SerialKey);
 await using (var scope = host.Services.CreateAsyncScope())
 {
     var database = scope.ServiceProvider.GetRequiredService<EdiDbContext>().Database;
+
+    // Only the server and database names: the full connection string can hold a password.
+    var connection = database.GetDbConnection();
+    Console.WriteLine($"Using database {connection.Database} on {connection.DataSource}");
+
     const string howToFix = "From vicente-m/ run: dotnet dotnet-ef database update --project src/EdiConsole";
 
     if (!await database.CanConnectAsync())

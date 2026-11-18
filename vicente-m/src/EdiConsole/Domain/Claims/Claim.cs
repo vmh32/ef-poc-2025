@@ -25,7 +25,7 @@ public class Claim
 
     public required BillingProvider BillingProvider { get; set; }    // 2010AA
     public required Subscriber Subscriber { get; set; }              // 2000B + 2010BA
-    public required Patient Patient { get; set; }                    // 2000C + 2010CA, or the subscriber
+    public required Patient Patient { get; set; }                    // 2000C + 2010CA, or the subscriber (the patient is always declared, even if the subscriber is the patient, for simplicity)
     public required Payer Payer { get; set; }                        // 2010BB
 
     public List<ClaimDiagnosis> Diagnoses { get; } = [];

@@ -6,7 +6,7 @@ namespace EdiConsole.Domain.Parties;
 /// </summary>
 public sealed record BillingProvider
 {
-    public required string Npi { get; init; }       // NM109 (NM108 = XX)
+    public required string Npi { get; init; }       // NM109 (NM108 = XX) ## we are making it required as custom rule: should polish (make nullable + rule to require it when NM108 = XX)
     public required PartyName Name { get; init; }   // NM103–NM105
     public required string TaxId { get; init; }     // REF02 (REF01 = EI or SY)
     public required Address Address { get; init; }  // N3/N4
