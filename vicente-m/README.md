@@ -96,6 +96,41 @@ If the folder doesn't exist, the app stops and prints the full path it tried.
 - `Ingestion:SnipLevel` (default `4`, in `appsettings.json`) is the SNIP level EdiFabric validates at, 1–4.
   Example: `dotnet run --project src/EdiConsole -- --Ingestion:SnipLevel=1`.
 
+## Logging
+
+A run writes to two places:
+
+| Output | Goes to | What it holds |
+|---|---|---|
+| The run report | stdout | The database and folder used, one line per file (outcome and counts), a summary |
+| The logs | stderr | Warnings and errors by default, e.g. why the database check failed, or a file that failed, with its stack trace |
+
+Because they're separate, `dotnet run --project src/EdiConsole > report.txt` captures only the report, and the logs
+stay on screen.
+
+The logs are standard .NET logging (`ILogger`), set in the `Logging` section of `appsettings.json`. To see more,
+raise the level for one run:
+
+```powershell
+dotnet run --project src/EdiConsole -- --Logging:LogLevel:EdiConsole=Information
+```
+
+`Information` adds "run started", one line per file (outcome, claim and issue counts, elapsed ms) and "run finished".
+Like any setting, the level can also come from an environment variable (`$env:Logging__LogLevel__EdiConsole = "Information"`).
+EF Core logs at `Warning` unless you raise `Microsoft.EntityFrameworkCore` the same way.
+
+A log line is one line, timestamped, with its source:
+
+```
+13:57:54 fail: EdiConsole.Persistence.DatabaseCheck[0] Can't connect to database EdiIngestion_DoesNotExist on .\SQLEXPRESS ...
+```
+
+A stack trace is flattened onto that line too. For the usual multi-line layout, add
+`--Logging:Console:FormatterOptions:SingleLine=false`.
+
+The logs never contain claim data: only file names, outcomes, counts and timings. What happened to each file,
+including every validation issue, is kept in the database (see below).
+
 ## Looking at the results
 
 With `sqlcmd` (`-E` Windows sign-in, `-C` trust the local server's self-signed certificate, `-d` database,

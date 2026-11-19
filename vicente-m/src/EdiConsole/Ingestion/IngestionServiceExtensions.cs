@@ -31,7 +31,7 @@ public static class IngestionServiceExtensions
         services.AddLocalFolderSource();
         services.AddEdiPersistence(configuration);
 
-        // Scoped: one per file (see the loop in Program.cs). The facade's DbContext tracks what it saves,
+        // Scoped: one per file (see the loop in FolderIngestion). The facade's DbContext tracks what it saves,
         // so it must not outlive a file.
         services.AddScoped<IIngestionService, IngestionService>();
 

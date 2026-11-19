@@ -21,7 +21,7 @@ using var host = builder.Build();
 host.Services.ApplyEdiFabricLicense();   // process-wide, once, before any EDI is read or written
 
 // The database must exist and be up to date before any file is read.
-if (!await DatabaseCheck.PassesAsync(host.Services))
+if (!await host.Services.GetRequiredService<DatabaseCheck>().PassesAsync(Console.Out))
 {
     Environment.ExitCode = 1;
     return;

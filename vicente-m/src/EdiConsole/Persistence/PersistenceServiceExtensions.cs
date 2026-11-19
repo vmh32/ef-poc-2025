@@ -7,8 +7,8 @@ namespace EdiConsole.Persistence;
 public static class PersistenceServiceExtensions
 {
     /// <summary>
-    /// Registers the EF Core context and the ingestion store on SQL Server. Both are scoped: the DbContext tracks
-    /// what it saves, so it must not outlive one file.
+    /// Registers the EF Core context and the ingestion store on SQL Server, and the startup database check.
+    /// The context and the store are scoped: the DbContext tracks what it saves, so it must not outlive one file.
     /// </summary>
     public static IServiceCollection AddEdiPersistence(this IServiceCollection services, IConfiguration configuration)
     {
@@ -19,6 +19,7 @@ public static class PersistenceServiceExtensions
 
         services.AddDbContext<EdiDbContext>(options => options.UseSqlServer(connectionString));
         services.AddScoped<IIngestionStore, EfIngestionStore>();
+        services.AddSingleton<DatabaseCheck>();                     // opens its own scope for the DbContext
 
         return services;
     }
