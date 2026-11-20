@@ -27,19 +27,14 @@ public sealed class DatabaseCheck(IServiceScopeFactory scopeFactory, ILogger<Dat
 
         if (!await database.CanConnectAsync(cancellationToken))
         {
-            logger.LogError(
-                "Can't connect to database {Database} on {Server} (ConnectionStrings:{ConnectionStringName}). " +
-                "Is SQL Server running, and was the database created? {HowToFix}",
-                connection.Database, connection.DataSource, EdiDbContext.ConnectionStringName, HowToFix);
+            logger.CannotConnect(connection.Database, connection.DataSource, EdiDbContext.ConnectionStringName, HowToFix);
             return false;
         }
 
         var pending = (await database.GetPendingMigrationsAsync(cancellationToken)).ToList();
         if (pending.Count > 0)
         {
-            logger.LogError(
-                "Database {Database} is missing {PendingCount} migration(s): {PendingMigrations}. {HowToFix}",
-                connection.Database, pending.Count, string.Join(", ", pending), HowToFix);
+            logger.MigrationsMissing(connection.Database, pending.Count, string.Join(", ", pending), HowToFix);
             return false;
         }
 

@@ -7,6 +7,7 @@ using EdiConsole.Persistence;
 using EdiConsole.Sourcing;
 using EdiConsole.Validation;
 using EdiFabric.Framework.Readers;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace EdiConsole.Ingestion;
@@ -36,7 +37,8 @@ public sealed class IngestionService(
     IClaimMapper mapper,
     IIngestionStore store,
     IOptions<IngestionOptions> options,
-    TimeProvider timeProvider) : IIngestionService
+    TimeProvider timeProvider,
+    ILogger<IngestionService> logger) : IIngestionService
 {
     /// <summary>Issue code for a file with no transaction sets in it.</summary>
     public const string EmptyFileCode = "EmptyFile";
@@ -56,10 +58,14 @@ public sealed class IngestionService(
         // and a stream from S3 (Phase 2) can't be rewound. Fine for EDI files of a few KB to a few MB.
         var content = await ReadAllAsync(file, cancellationToken);
         var sha256 = Convert.ToHexString(SHA256.HashData(content)).ToLowerInvariant();
+        logger.FileRead(content.Length, sha256);
 
         // 3. Dedupe, before EdiFabric is used.
         if (await store.IsAlreadyIngestedAsync(sha256, cancellationToken))
+        {
+            logger.DuplicateSkipped(sha256);
             return new IngestionResult(file.Name, IngestionOutcome.Duplicate, ClaimCount: 0, ErrorCount: 0);
+        }
 
         var snipLevel = options.Value.SnipLevel;
         var ingestedFile = new IngestedFile
@@ -92,6 +98,7 @@ public sealed class IngestionService(
                     Code = problem.Code,
                     Message = problem.Message,
                 });
+                logger.TransactionNotProcessed(parsed.TransactionSetControlNumber, problem.Code);
                 continue;
             }
 
@@ -100,15 +107,19 @@ public sealed class IngestionService(
             if (transactionIssues.Count > 0)                                             // invalid: never mapped
             {
                 issues.AddRange(transactionIssues);
+                logger.TransactionInvalid(parsed.TransactionSetControlNumber, snipLevel, transactionIssues.Count);
                 continue;
             }
 
             try
             {
-                claims.AddRange(mapper.Map(transaction));
+                var mapped = mapper.Map(transaction);
+                claims.AddRange(mapped);
+                logger.TransactionMapped(parsed.TransactionSetControlNumber, mapped.Count);
             }
             catch (InvalidDataException ex)                                             // valid, yet a required value is missing
             {
+                logger.TransactionUnmappable(parsed.TransactionSetControlNumber);
                 issues.Add(new ValidationIssue
                 {
                     TransactionSetControlNumber = parsed.TransactionSetControlNumber,
@@ -138,9 +149,11 @@ public sealed class IngestionService(
         ingestedFile.ClaimCount = ingestedFile.Claims.Count;
         ingestedFile.ErrorCount = ingestedFile.Issues.Count;
         ingestedFile.CompletedAt = timeProvider.GetUtcNow();
+        logger.FileDecided(ingestedFile.Status, transactionCount, ingestedFile.ClaimCount, ingestedFile.ErrorCount);
 
         // 6. Save the file with its claims or issues, in one SaveChanges.
         await store.SaveAsync(ingestedFile, cancellationToken);
+        logger.FileSaved(ingestedFile.Id);                                               // the row to look up in the database
 
         // 7. Report.
         var outcome = ingestedFile.Status == IngestionStatus.Accepted ? IngestionOutcome.Accepted : IngestionOutcome.Rejected;

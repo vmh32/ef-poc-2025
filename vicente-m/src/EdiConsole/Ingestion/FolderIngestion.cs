@@ -31,7 +31,7 @@ public sealed class FolderIngestion(
         var folder = Path.GetFullPath(fileSourceOptions.Value.Folder);
         var snipLevel = ingestionOptions.Value.SnipLevel;
         output.WriteLine($"Ingesting {folder} at SNIP level {snipLevel}");
-        logger.LogInformation("Run started: {Folder} at SNIP level {SnipLevel}", folder, snipLevel);
+        logger.RunStarted(folder, snipLevel);
 
         var results = new List<IngestionResult>();
         var failed = 0;
@@ -40,6 +40,7 @@ public sealed class FolderIngestion(
         {
             await using var scope = scopeFactory.CreateAsyncScope();
             var ingestion = scope.ServiceProvider.GetRequiredService<IIngestionService>();
+            using var fileScope = logger.BeginFileScope(file.Name);    // every log line for this file names it
             var started = Stopwatch.GetTimestamp();
 
             try
@@ -54,9 +55,7 @@ public sealed class FolderIngestion(
                     _ => "already ingested: skipped",
                 };
                 output.WriteLine($"  {file.Name,-40} {result.Outcome,-10} {detail}");
-                logger.LogInformation(
-                    "File {FileName} {Outcome}: {ClaimCount} claim(s), {ErrorCount} issue(s) in {ElapsedMs} ms",
-                    file.Name, result.Outcome, result.ClaimCount, result.ErrorCount, ElapsedMs(started));
+                logger.FileDone(file.Name, result.Outcome, result.ClaimCount, result.ErrorCount, ElapsedMs(started));
             }
             catch (Exception ex)                                // one file failing (e.g. I/O, database) mustn't stop the others
             {
@@ -64,7 +63,7 @@ public sealed class FolderIngestion(
                 output.WriteLine($"  {file.Name,-40} {"FAILED",-10} {ex.GetType().Name}: {ex.Message}");
 
                 // The exception object, not just its message: the log keeps the stack trace.
-                logger.LogError(ex, "File {FileName} failed after {ElapsedMs} ms", file.Name, ElapsedMs(started));
+                logger.FileFailed(ex, file.Name, ElapsedMs(started));
             }
         }
 
@@ -77,9 +76,7 @@ public sealed class FolderIngestion(
         output.WriteLine(
             $"Done: {summary.Accepted} accepted, {summary.Rejected} rejected, " +
             $"{summary.Duplicates} duplicate(s), {summary.Failed} failed.");
-        logger.LogInformation(
-            "Run finished: {Accepted} accepted, {Rejected} rejected, {Duplicates} duplicate(s), {Failed} failed",
-            summary.Accepted, summary.Rejected, summary.Duplicates, summary.Failed);
+        logger.RunFinished(summary.Accepted, summary.Rejected, summary.Duplicates, summary.Failed);
 
         return summary;
     }

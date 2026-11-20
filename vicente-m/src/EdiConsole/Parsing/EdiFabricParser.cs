@@ -4,6 +4,7 @@ using EdiFabric.Core.Model.Edi.ErrorContexts;
 using EdiFabric.Core.Model.Edi.X12;
 using EdiFabric.Framework.Readers;
 using EdiFabric.Templates.Hipaa5010;
+using Microsoft.Extensions.Logging;
 
 namespace EdiConsole.Parsing;
 
@@ -27,7 +28,7 @@ namespace EdiConsole.Parsing;
 /// A file with a wrong envelope but a valid 837P is accepted (e.g. samples/837-sample-file-2.edi).
 /// </para>
 /// </remarks>
-public sealed class EdiFabricParser : IEdiParser
+public sealed class EdiFabricParser(ILogger<EdiFabricParser> logger) : IEdiParser
 {
     // EdiFabric finds the transaction classes (TS837P...) in this assembly, by each file's GS08 version.
     private const string TemplatesAssembly = "EdiFabric.Templates.Hipaa";
@@ -48,6 +49,8 @@ public sealed class EdiFabricParser : IEdiParser
 
         while (await reader.ReadAsync(cancellationToken))       // an empty file yields nothing at all
         {
+            logger.ItemRead(reader.Item?.GetType().Name ?? "null", ControlNumberOf(reader.Item));
+
             // Order matters: a switch takes the first matching case, and a TS837P is also an EdiMessage,
             // so the specific case must come before the general one (the compiler rejects it otherwise).
             switch (reader.Item)
@@ -92,6 +95,7 @@ public sealed class EdiFabricParser : IEdiParser
                                                                 // counts), and their own fields aren't checked either (see remarks).
 
                 default:                                        // anything else: reject visibly, never ignore silently
+                    logger.UnexpectedItem(reader.Item?.GetType().Name ?? "null");
                     yield return new ParsedTransaction(
                         interchange?.InterchangeControlNumber_13,
                         interchange?.UsageIndicator_15,
@@ -104,4 +108,14 @@ public sealed class EdiFabricParser : IEdiParser
             }
         }
     }
+
+    // For the log only: the control number that identifies an item, when it has one.
+    private static string? ControlNumberOf(object? item) => item switch
+    {
+        ISA isa => isa.InterchangeControlNumber_13,                         // ISA13
+        TS837P transaction => transaction.ST?.TransactionSetControlNumber_02, // ST02
+        EdiMessage other => other.ErrorContext?.ControlNumber,
+        ReaderErrorContext error => error.MessageErrorContext?.ControlNumber,
+        _ => null,
+    };
 }

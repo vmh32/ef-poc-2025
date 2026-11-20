@@ -115,15 +115,34 @@ raise the level for one run:
 dotnet run --project src/EdiConsole -- --Logging:LogLevel:EdiConsole=Information
 ```
 
-`Information` adds "run started", one line per file (outcome, claim and issue counts, elapsed ms) and "run finished".
-Like any setting, the level can also come from an environment variable (`$env:Logging__LogLevel__EdiConsole = "Information"`).
+Each level adds to the one before it:
+
+- **`Information`:** "run started", one line per file (outcome, claim and issue counts, elapsed ms), duplicates
+  skipped, and "run finished".
+- **`Debug`:** every step of every file:
+  - bytes read and SHA-256
+  - each item the EDI reader yields (ISA, GS, the transactions with their control numbers, GE, IEA)
+  - each transaction's result: mapped, invalid with its issue count, or not processed
+  - the decision, and the `IngestedFiles.Id` it was saved as
+
+Like any setting, the level can also come from an environment variable:
+
+```powershell
+$env:Logging__LogLevel__EdiConsole = "Information"
+```
+
 EF Core logs at `Warning` unless you raise `Microsoft.EntityFrameworkCore` the same way.
 
-A log line is one line, timestamped, with its source:
+A log line is one line, timestamped, with its source and event ID. While a file is processed, every line also names
+the file (after `=>`), whichever class wrote it:
 
 ```
-13:57:54 fail: EdiConsole.Persistence.DatabaseCheck[0] Can't connect to database EdiIngestion_DoesNotExist on .\SQLEXPRESS ...
+08:35:25 dbug: EdiConsole.Ingestion.IngestionService[305] => 837-sample-file-2.edi Transaction 000000001 valid: 1 claim(s) mapped
+08:34:36 fail: EdiConsole.Ingestion.FolderIngestion[203] => locked.edi File locked.edi failed after 6 ms System.IO.IOException: ...
 ```
+
+The event IDs are stable, so a log platform can filter on them: 1xx database check, 2xx folder run, 3xx one file,
+4xx EDI reader. They're declared in `PersistenceLog.cs`, `IngestionLog.cs` and `ParsingLog.cs`.
 
 A stack trace is flattened onto that line too. For the usual multi-line layout, add
 `--Logging:Console:FormatterOptions:SingleLine=false`.
