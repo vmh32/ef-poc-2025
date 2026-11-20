@@ -8,13 +8,13 @@ namespace EdiConsole.Persistence;
 /// </summary>
 internal static partial class PersistenceLog
 {
-    [LoggerMessage(EventId = 101, Level = LogLevel.Error,
+    [LoggerMessage(EventId = 101, EventName = "CannotConnect", Level = LogLevel.Error,
         Message = "Can't connect to database {Database} on {Server} (ConnectionStrings:{ConnectionStringName}). " +
                   "Is SQL Server running, and was the database created? {HowToFix}")]
     public static partial void CannotConnect(
         this ILogger logger, string database, string server, string connectionStringName, string howToFix);
 
-    [LoggerMessage(EventId = 102, Level = LogLevel.Error,
+    [LoggerMessage(EventId = 102, EventName = "MigrationsMissing", Level = LogLevel.Error,
         Message = "Database {Database} is missing {PendingCount} migration(s): {PendingMigrations}. {HowToFix}")]
     public static partial void MigrationsMissing(
         this ILogger logger, string database, int pendingCount, string pendingMigrations, string howToFix);

@@ -141,8 +141,9 @@ the file (after `=>`), whichever class wrote it:
 08:34:36 fail: EdiConsole.Ingestion.FolderIngestion[203] => locked.edi File locked.edi failed after 6 ms System.IO.IOException: ...
 ```
 
-The event IDs are stable, so a log platform can filter on them: 1xx database check, 2xx folder run, 3xx one file,
-4xx EDI reader. They're declared in `PersistenceLog.cs`, `IngestionLog.cs` and `ParsingLog.cs`.
+Each event has a stable ID and a name, for example `203` and `FileFailed`, so a log platform can filter on them. IDs are
+grouped by area: 1xx database check, 2xx folder run, 3xx one file, 4xx EDI reader. What each event means, and what to
+do about it, is in [docs/log-events.md](docs/log-events.md).
 
 A stack trace is flattened onto that line too. For the usual multi-line layout, add
 `--Logging:Console:FormatterOptions:SingleLine=false`.

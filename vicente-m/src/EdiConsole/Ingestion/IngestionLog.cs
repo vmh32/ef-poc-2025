@@ -21,51 +21,52 @@ internal static partial class IngestionLog
     /// <summary>Every event logged while the file is processed, by any class, carries its name.</summary>
     public static IDisposable? BeginFileScope(this ILogger logger, string fileName) => FileScope(logger, fileName);
 
-    [LoggerMessage(EventId = 201, Level = LogLevel.Information, Message = "Run started: {Folder} at SNIP level {SnipLevel}")]
+    [LoggerMessage(EventId = 201, EventName = "RunStarted", Level = LogLevel.Information, Message = "Run started: {Folder} at SNIP level {SnipLevel}")]
     public static partial void RunStarted(this ILogger logger, string folder, byte snipLevel);
 
-    [LoggerMessage(EventId = 202, Level = LogLevel.Information,
+    [LoggerMessage(EventId = 202, EventName = "FileDone", Level = LogLevel.Information,
         Message = "File {FileName} {Outcome}: {ClaimCount} claim(s), {ErrorCount} issue(s) in {ElapsedMs} ms")]
     public static partial void FileDone(
         this ILogger logger, string fileName, IngestionOutcome outcome, int claimCount, int errorCount, long elapsedMs);
 
-    [LoggerMessage(EventId = 203, Level = LogLevel.Error, Message = "File {FileName} failed after {ElapsedMs} ms")]
+    [LoggerMessage(EventId = 203, EventName = "FileFailed", Level = LogLevel.Error, Message = "File {FileName} failed after {ElapsedMs} ms")]
     public static partial void FileFailed(this ILogger logger, Exception exception, string fileName, long elapsedMs);
 
-    [LoggerMessage(EventId = 204, Level = LogLevel.Information,
+    [LoggerMessage(EventId = 204, EventName = "RunFinished", Level = LogLevel.Information,
         Message = "Run finished: {Accepted} accepted, {Rejected} rejected, {Duplicates} duplicate(s), {Failed} failed")]
     public static partial void RunFinished(this ILogger logger, int accepted, int rejected, int duplicates, int failed);
 
     // ── One file (IngestionService) ──────────────────────────────────────────────────────────────────────────
 
-    [LoggerMessage(EventId = 301, Level = LogLevel.Debug, Message = "Read {ByteCount} bytes, SHA-256 {Sha256}")]
+    [LoggerMessage(EventId = 301, EventName = "FileRead", Level = LogLevel.Debug, Message = "Read {ByteCount} bytes, SHA-256 {Sha256}")]
     public static partial void FileRead(this ILogger logger, int byteCount, string sha256);
 
-    [LoggerMessage(EventId = 302, Level = LogLevel.Information,
+    [LoggerMessage(EventId = 302, EventName = "DuplicateSkipped", Level = LogLevel.Information,
         Message = "Duplicate skipped: SHA-256 {Sha256} was ingested before")]
     public static partial void DuplicateSkipped(this ILogger logger, string sha256);
 
-    [LoggerMessage(EventId = 303, Level = LogLevel.Debug,
+    [LoggerMessage(EventId = 303, EventName = "TransactionNotProcessed", Level = LogLevel.Debug,
         Message = "Transaction {ControlNumber} not processed: {ProblemCode}")]
     public static partial void TransactionNotProcessed(this ILogger logger, string? controlNumber, string problemCode);
 
-    [LoggerMessage(EventId = 304, Level = LogLevel.Debug,
+    [LoggerMessage(EventId = 304, EventName = "TransactionInvalid", Level = LogLevel.Debug,
         Message = "Transaction {ControlNumber} invalid at SNIP level {SnipLevel}: {IssueCount} issue(s)")]
     public static partial void TransactionInvalid(this ILogger logger, string? controlNumber, byte snipLevel, int issueCount);
 
-    [LoggerMessage(EventId = 305, Level = LogLevel.Debug, Message = "Transaction {ControlNumber} valid: {ClaimCount} claim(s) mapped")]
+    [LoggerMessage(EventId = 305, EventName = "TransactionMapped", Level = LogLevel.Debug, Message = "Transaction {ControlNumber} valid: {ClaimCount} claim(s) mapped")]
     public static partial void TransactionMapped(this ILogger logger, string? controlNumber, int claimCount);
 
-    // The exception message names the X12 location but can also quote a value, so only the code is logged.
-    [LoggerMessage(EventId = 306, Level = LogLevel.Debug,
+    // A Warning, not Debug: a valid file we can't map is our gap, and at the default level this line is the only
+    // log trace of it. The exception message names the X12 location but can also quote a value, so only the code is logged.
+    [LoggerMessage(EventId = 306, EventName = "TransactionUnmappable", Level = LogLevel.Warning,
         Message = "Transaction {ControlNumber} valid but unmappable: " + IngestionService.UnmappableTransactionCode)]
     public static partial void TransactionUnmappable(this ILogger logger, string? controlNumber);
 
-    [LoggerMessage(EventId = 307, Level = LogLevel.Debug,
+    [LoggerMessage(EventId = 307, EventName = "FileDecided", Level = LogLevel.Debug,
         Message = "Decided {Status}: {TransactionCount} transaction(s), {ClaimCount} claim(s), {IssueCount} issue(s)")]
     public static partial void FileDecided(
         this ILogger logger, Domain.Tracking.IngestionStatus status, int transactionCount, int claimCount, int issueCount);
 
-    [LoggerMessage(EventId = 308, Level = LogLevel.Debug, Message = "Saved as IngestedFiles.Id {IngestedFileId}")]
+    [LoggerMessage(EventId = 308, EventName = "FileSaved", Level = LogLevel.Debug, Message = "Saved as IngestedFiles.Id {IngestedFileId}")]
     public static partial void FileSaved(this ILogger logger, long ingestedFileId);
 }

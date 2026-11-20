@@ -29,6 +29,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Linked, not copied: LogEventCatalogueTests reads the log event table from the output's docs folder. -->
+    <None Include="..\..\docs\log-events.md" Link="docs\log-events.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 

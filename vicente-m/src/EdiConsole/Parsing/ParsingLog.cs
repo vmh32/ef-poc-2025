@@ -8,10 +8,10 @@ namespace EdiConsole.Parsing;
 internal static partial class ParsingLog
 {
     /// <param name="controlNumber">ISA13 for an ISA, ST02 for a transaction, null for the rest.</param>
-    [LoggerMessage(EventId = 401, Level = LogLevel.Debug, Message = "Reader yielded {ItemType} {ControlNumber}")]
+    [LoggerMessage(EventId = 401, EventName = "ItemRead", Level = LogLevel.Debug, Message = "Reader yielded {ItemType} {ControlNumber}")]
     public static partial void ItemRead(this ILogger logger, string itemType, string? controlNumber);
 
     // Rejected visibly as an issue too; a warning because it means the reader did something we didn't plan for.
-    [LoggerMessage(EventId = 402, Level = LogLevel.Warning, Message = "Reader yielded an unexpected item: {ItemType}")]
+    [LoggerMessage(EventId = 402, EventName = "UnexpectedItem", Level = LogLevel.Warning, Message = "Reader yielded an unexpected item: {ItemType}")]
     public static partial void UnexpectedItem(this ILogger logger, string itemType);
 }
