@@ -18,7 +18,7 @@ IDs are grouped by area:
 |---|---|---|---|---|
 | 101 | CannotConnect | Error | The app can't open the database. | Start SQL Server, check `ConnectionStrings:EdiDb`, then create the database (see the README, *3. The database*). |
 | 102 | MigrationsMissing | Error | The database exists, but its migrations aren't applied. | Run `dotnet dotnet-ef database update --project src/EdiConsole` from `vicente-m/`. |
-| 201 | RunStarted | Information | A run began: the folder and the SNIP level. | None. |
+| 201 | RunStarted | Information | A run began: the source and the SNIP level. | None. |
 | 202 | FileDone | Information | A file finished: its outcome and counts. | If Rejected, read its rows in `ValidationIssues`. |
 | 203 | FileFailed | Error | A file couldn't be processed. The exception is attached. | Read the exception. Nothing from that file was saved, so fix the cause and run again. |
 | 204 | RunFinished | Information | The totals for the run. | None. |

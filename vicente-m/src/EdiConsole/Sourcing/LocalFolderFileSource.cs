@@ -10,6 +10,9 @@ public sealed class LocalFolderFileSource(IOptions<FileSourceOptions> options) :
 {
     private readonly FileSourceOptions _options = options.Value;
 
+    /// <summary>The folder's full path, as the run report shows it. Doesn't check that the folder exists.</summary>
+    public string Description => Path.GetFullPath(_options.Folder);   // relative → against the current directory
+
     /// <summary>
     /// Lists the matching files, sorted by name so every run processes them in the same order.
     /// </summary>

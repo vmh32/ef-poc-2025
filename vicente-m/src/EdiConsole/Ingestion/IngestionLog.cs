@@ -21,8 +21,8 @@ internal static partial class IngestionLog
     /// <summary>Every event logged while the file is processed, by any class, carries its name.</summary>
     public static IDisposable? BeginFileScope(this ILogger logger, string fileName) => FileScope(logger, fileName);
 
-    [LoggerMessage(EventId = 201, EventName = "RunStarted", Level = LogLevel.Information, Message = "Run started: {Folder} at SNIP level {SnipLevel}")]
-    public static partial void RunStarted(this ILogger logger, string folder, byte snipLevel);
+    [LoggerMessage(EventId = 201, EventName = "RunStarted", Level = LogLevel.Information, Message = "Run started: {Source} at SNIP level {SnipLevel}")]
+    public static partial void RunStarted(this ILogger logger, string source, byte snipLevel);
 
     [LoggerMessage(EventId = 202, EventName = "FileDone", Level = LogLevel.Information,
         Message = "File {FileName} {Outcome}: {ClaimCount} claim(s), {ErrorCount} issue(s) in {ElapsedMs} ms")]

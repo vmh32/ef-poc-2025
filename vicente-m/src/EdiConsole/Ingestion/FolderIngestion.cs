@@ -22,16 +22,15 @@ namespace EdiConsole.Ingestion;
 public sealed class FolderIngestion(
     IServiceScopeFactory scopeFactory,
     IEdiFileSource source,
-    IOptions<FileSourceOptions> fileSourceOptions,
     IOptions<IngestionOptions> ingestionOptions,
     ILogger<FolderIngestion> logger)
 {
     public async Task<FolderIngestionSummary> RunAsync(TextWriter output, CancellationToken cancellationToken = default)
     {
-        var folder = Path.GetFullPath(fileSourceOptions.Value.Folder);
+        var description = source.Description;
         var snipLevel = ingestionOptions.Value.SnipLevel;
-        output.WriteLine($"Ingesting {folder} at SNIP level {snipLevel}");
-        logger.RunStarted(folder, snipLevel);
+        output.WriteLine($"Ingesting {description} at SNIP level {snipLevel}");
+        logger.RunStarted(description, snipLevel);
 
         var results = new List<IngestionResult>();
         var failed = 0;
