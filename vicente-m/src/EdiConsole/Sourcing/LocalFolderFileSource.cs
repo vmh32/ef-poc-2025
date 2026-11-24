@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 namespace EdiConsole.Sourcing;
 
 /// <summary>
-/// <see cref="IEdiFileSource"/> on a local folder (Phase 1). Phase 2 adds an S3 source behind the same interface.
+/// <see cref="IEdiFileSource"/> on a local folder. <see cref="S3FileSource"/> is the other implementation.
 /// </summary>
 public sealed class LocalFolderFileSource(IOptions<FileSourceOptions> options) : IEdiFileSource
 {
@@ -36,7 +36,7 @@ public sealed class LocalFolderFileSource(IOptions<FileSourceOptions> options) :
             yield return new EdiFile(Path.GetFileName(path), path);   // SourceUri = the full path
         }
 
-        // Listing a local folder is synchronous; the interface is asynchronous because S3 (Phase 2) isn't.
+        // Listing a local folder is synchronous; the interface is asynchronous because S3 isn't.
         // This line only keeps the compiler from warning that an async method has no await (CS1998).
         await Task.CompletedTask;
     }

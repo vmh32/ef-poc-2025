@@ -6,7 +6,7 @@ namespace EdiConsole.Sourcing;
 /// </summary>
 public interface IEdiFileSource
 {
-    /// <summary>What the run report and the logs call this source: the folder's full path, or s3://bucket/prefix later.</summary>
+    /// <summary>What the run report and the logs call this source: the folder's full path, or s3://bucket/prefix.</summary>
     string Description { get; }
 
     /// <summary>Lists the files available for ingestion.</summary>

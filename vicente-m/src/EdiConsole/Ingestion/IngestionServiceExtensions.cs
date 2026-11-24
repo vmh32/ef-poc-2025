@@ -28,7 +28,7 @@ public static class IngestionServiceExtensions
         services.AddSingleton<ITransactionValidator, EdiFabricValidator>();
         services.AddSingleton<IClaimMapper, ClaimMapper>();
 
-        services.AddLocalFolderSource();
+        services.AddFileSource();
         services.AddEdiPersistence(configuration);
 
         // Scoped: one per file (see the loop in FolderIngestion). The facade's DbContext tracks what it saves,

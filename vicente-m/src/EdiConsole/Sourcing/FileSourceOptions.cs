@@ -2,13 +2,13 @@ namespace EdiConsole.Sourcing;
 
 /// <summary>
 /// Settings for the file source, bound from the "FileSource" configuration section
-/// (appsettings, or environment variables such as <c>FileSource__Folder</c>).
+/// (appsettings, or environment variables such as <c>FileSource__Kind</c>).
 /// </summary>
 public sealed class FileSourceOptions
 {
     public const string SectionName = "FileSource";
 
-    /// <summary>Where this run reads from. Only <see cref="FileSourceKind.Local"/> exists so far.</summary>
+    /// <summary>Where this run reads from: a local folder (<see cref="Folder"/>) or an S3 bucket (<see cref="S3SourceOptions"/>).</summary>
     public FileSourceKind Kind { get; set; } = FileSourceKind.Local;
 
     /// <summary>
@@ -17,6 +17,6 @@ public sealed class FileSourceOptions
     /// </summary>
     public string Folder { get; set; } = string.Empty;
 
-    /// <summary>Which files to pick up. Only the folder itself is searched, not subfolders.</summary>
+    /// <summary>Which file names to pick up, e.g. *.edi. Subfolders are skipped.</summary>
     public string SearchPattern { get; set; } = "*.edi";
 }
