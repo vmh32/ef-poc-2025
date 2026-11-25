@@ -2,6 +2,7 @@ using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using EdiConsole.Sourcing;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace EdiConsole.Tests.Support;
@@ -52,6 +53,10 @@ internal sealed class MotoBucket : IAsyncDisposable
     /// <summary>A source on this bucket, built with the app's settings and config, and the test's credentials.</summary>
     public S3FileSource CreateSource(string prefix, string searchPattern) =>
         new(_client, Options.Create(SettingsFor(Name, prefix)), Options.Create(new FileSourceOptions { SearchPattern = searchPattern }));
+
+    /// <summary>A startup check on this bucket, or on <paramref name="bucketName"/> through the same client.</summary>
+    public S3SourceCheck CreateCheck(ILogger<S3SourceCheck> logger, string? bucketName = null) =>
+        new(_client, Options.Create(SettingsFor(bucketName ?? Name, string.Empty)), logger);
 
     public async Task PutAsync(string key, byte[] content)
     {

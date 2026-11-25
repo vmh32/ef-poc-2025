@@ -1,6 +1,7 @@
 ﻿using EdiConsole.Configuration;
 using EdiConsole.Ingestion;
 using EdiConsole.Persistence;
+using EdiConsole.Sourcing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -27,7 +28,14 @@ if (!await host.Services.GetRequiredService<DatabaseCheck>().PassesAsync(Console
     return;
 }
 
+// The file source must be ready too: the folder must exist, or the bucket must answer.
+if (!await host.Services.GetRequiredService<IFileSourceCheck>().PassesAsync(Console.Out))
+{
+    Environment.ExitCode = 1;
+    return;
+}
+
 var summary = await host.Services.GetRequiredService<FolderIngestion>().RunAsync(Console.Out);
 
-if (summary.Failed > 0)
+if (summary.Failed > 0 || summary.ListingFailed)
     Environment.ExitCode = 1;

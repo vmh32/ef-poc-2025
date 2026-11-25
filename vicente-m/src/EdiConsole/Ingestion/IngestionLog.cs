@@ -36,6 +36,9 @@ internal static partial class IngestionLog
         Message = "Run finished: {Accepted} accepted, {Rejected} rejected, {Duplicates} duplicate(s), {Failed} failed")]
     public static partial void RunFinished(this ILogger logger, int accepted, int rejected, int duplicates, int failed);
 
+    [LoggerMessage(EventId = 205, EventName = "ListingFailed", Level = LogLevel.Error, Message = "Listing {Source} failed, so the run stopped")]
+    public static partial void ListingFailed(this ILogger logger, Exception exception, string source);
+
     // ── One file (IngestionService) ──────────────────────────────────────────────────────────────────────────
 
     [LoggerMessage(EventId = 301, EventName = "FileRead", Level = LogLevel.Debug, Message = "Read {ByteCount} bytes, SHA-256 {Sha256}")]

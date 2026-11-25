@@ -11,6 +11,7 @@ IDs are grouped by area:
 | 2xx | Folder run |
 | 3xx | One file (the ingestion service) |
 | 4xx | EDI reader |
+| 5xx | File source check at startup |
 
 ## Events
 
@@ -22,6 +23,7 @@ IDs are grouped by area:
 | 202 | FileDone | Information | A file finished: its outcome and counts. | If Rejected, read its rows in `ValidationIssues`. |
 | 203 | FileFailed | Error | A file couldn't be processed. The exception is attached. | Read the exception. Nothing from that file was saved, so fix the cause and run again. |
 | 204 | RunFinished | Information | The totals for the run. | None. |
+| 205 | ListingFailed | Error | The list of files couldn't be read, so the run stopped. The exception is attached. | Read the exception, fix the cause and run again. Files already ingested are skipped as duplicates. |
 | 301 | FileRead | Debug | The file's size and SHA-256. | None. |
 | 302 | DuplicateSkipped | Information | The same bytes were ingested before, so nothing is stored. | None. |
 | 303 | TransactionNotProcessed | Debug | A transaction isn't an 837P, or can't be read. It's stored as an issue. | Read its code in `ValidationIssues`. |
@@ -32,6 +34,12 @@ IDs are grouped by area:
 | 308 | FileSaved | Debug | The `IngestedFiles` row was written. | Look it up by its `Id`. |
 | 401 | ItemRead | Debug | The EDI reader yielded an item: ISA, GS, a transaction, GE or IEA. | None. |
 | 402 | UnexpectedItem | Warning | The reader yielded something the parser doesn't handle. It's stored as an issue. | Report it: the reader or the file type may be new. |
+| 501 | FolderNotFound | Error | The local folder doesn't exist. The event shows the setting and the full path it resolved to. | Fix `FileSource:Folder`, or start the app from the folder the relative path expects. |
+| 502 | BucketNotFound | Error | The bucket doesn't exist on that endpoint. | Create the bucket, or fix `S3Source:BucketName`. moto forgets its buckets when it stops. |
+| 503 | S3Unreachable | Error | Nothing answered at the endpoint. The message ends with the reason, such as a refused connection or an unknown host. | Start moto, or check `S3Source:ServiceUrl` and the network. |
+| 504 | S3RequestNotSent | Error | The SDK couldn't send the request, most often because it found no credentials. The message ends with the SDK's reason, which lists where it looked for credentials. | Set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` (any values for moto), or use a profile or a role. |
+| 505 | S3CheckFailed | Error | The bucket answered with another error: the HTTP status and the S3 error code. | 403 means the credentials may not read the bucket. Otherwise read the status and the code. |
+| 506 | BucketInAnotherRegion | Error | The bucket exists, but in another region than `S3Source:Region` (S3 answered 301). | Set `S3Source:Region` to the bucket's region: in the S3 console, the bucket's *Properties → AWS Region*. |
 
 ## How the tests keep the codes honest
 

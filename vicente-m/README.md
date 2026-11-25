@@ -142,8 +142,8 @@ the file (after `=>`), whichever class wrote it:
 ```
 
 Each event has a stable ID and a name, for example `203` and `FileFailed`, so a log platform can filter on them. IDs are
-grouped by area: 1xx database check, 2xx folder run, 3xx one file, 4xx EDI reader. What each event means, and what to
-do about it, is in [docs/log-events.md](docs/log-events.md).
+grouped by area: 1xx database check, 2xx folder run, 3xx one file, 4xx EDI reader, 5xx file source check. What each
+event means, and what to do about it, is in [docs/log-events.md](docs/log-events.md).
 
 A stack trace is flattened onto that line too. For the usual multi-line layout, add
 `--Logging:Console:FormatterOptions:SingleLine=false`.

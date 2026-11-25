@@ -14,6 +14,7 @@ public sealed class SourcingServiceExtensionsTests
         using var provider = Build(new() { ["FileSource:Folder"] = "samples" }); //the default kind is Local, so no need to set it
 
         Assert.IsType<LocalFolderFileSource>(provider.GetRequiredService<IEdiFileSource>());
+        Assert.IsType<LocalFolderCheck>(provider.GetRequiredService<IFileSourceCheck>());
     }
 
     [Fact]
@@ -31,6 +32,7 @@ public sealed class SourcingServiceExtensionsTests
 
         Assert.IsType<S3FileSource>(source);
         Assert.Equal("s3://edi-bucket/incoming/", source.Description);
+        Assert.IsType<S3SourceCheck>(provider.GetRequiredService<IFileSourceCheck>());
     }
 
     [Fact]
@@ -84,6 +86,7 @@ public sealed class SourcingServiceExtensionsTests
     {
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(new ConfigurationBuilder().AddInMemoryCollection(settings).Build());
+        services.AddLogging();                          // the checks log; the host adds this in the app
         services.AddFileSource();
         return services.BuildServiceProvider();
     }

@@ -12,7 +12,8 @@ namespace EdiConsole.Ingestion;
 /// <remarks>
 /// <para>
 /// Each file gets its own DI scope, and so its own facade, store and DbContext. A file that fails (I/O, database)
-/// is counted and reported, and the run goes on with the next file.
+/// is counted and reported, and the run goes on with the next file. If the list of files itself can't be read (a
+/// deleted bucket, a dropped connection), the run stops: that's reported too, and the summary says so.
 /// </para>
 /// <para>
 /// Two outputs: the run report goes to <c>output</c> (the console's stdout), and the logs go to the
@@ -34,9 +35,27 @@ public sealed class FolderIngestion(
 
         var results = new List<IngestionResult>();
         var failed = 0;
+        var listingFailed = false;
 
-        await foreach (var file in source.ListAsync(cancellationToken))
+        // Not await foreach: a failure while listing has to be told apart from a failure while ingesting a file.
+        await using var files = source.ListAsync(cancellationToken).GetAsyncEnumerator();
+        while (true)
         {
+            EdiFile file;
+            try
+            {
+                if (!await files.MoveNextAsync())
+                    break;
+                file = files.Current;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)   // the list can't be read: no file can follow
+            {
+                listingFailed = true;
+                output.WriteLine($"Listing {description} failed: {ex.GetType().Name}: {ex.Message}");
+                logger.ListingFailed(ex, description);
+                break;
+            }
+
             await using var scope = scopeFactory.CreateAsyncScope();
             var ingestion = scope.ServiceProvider.GetRequiredService<IIngestionService>();
             using var fileScope = logger.BeginFileScope(file.Name);    // every log line for this file names it
@@ -70,10 +89,11 @@ public sealed class FolderIngestion(
             Accepted: results.Count(r => r.Outcome == IngestionOutcome.Accepted),
             Rejected: results.Count(r => r.Outcome == IngestionOutcome.Rejected),
             Duplicates: results.Count(r => r.Outcome == IngestionOutcome.Duplicate),
-            Failed: failed);
+            Failed: failed,
+            ListingFailed: listingFailed);
 
         output.WriteLine(
-            $"Done: {summary.Accepted} accepted, {summary.Rejected} rejected, " +
+            $"{(listingFailed ? "Stopped" : "Done")}: {summary.Accepted} accepted, {summary.Rejected} rejected, " +
             $"{summary.Duplicates} duplicate(s), {summary.Failed} failed.");
         logger.RunFinished(summary.Accepted, summary.Rejected, summary.Duplicates, summary.Failed);
 
